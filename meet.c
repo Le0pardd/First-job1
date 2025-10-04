@@ -6,8 +6,8 @@
 
 char bookingIDs[MAX_BOOKINGS][20];     // เก็บรหัสการจอง
 char bookerNames[MAX_BOOKINGS][50];    // เก็บชื่อผู้จอง
-char meetingRooms[MAX_BOOKINGS][30];   // เก็บห้องประชุม
-char dates[MAX_BOOKINGS][15];          // เก็บวันที่
+char meetingRooms[MAX_BOOKINGS][50];  // เก็บห้องประชุม
+char dates[MAX_BOOKINGS][20];     // เก็บวันที่
 char times[MAX_BOOKINGS][15];          // เก็บเวลา
 
 int count = 0; // นับจำนวนการจอง
@@ -27,7 +27,7 @@ void load_bookings() {
 
 // บันทึกข้อมูลลงไฟล์ CSV
 void save_bookings() {
-    FILE *fp = fopen(FILENAME, "w");
+    FILE *fp = fopen(FILENAME, "w"); 
     if (!fp) return;
     for (int i = 0; i < count; i++) {
         fprintf(fp, "%s,%s,%s,%s,%s\n", bookingIDs[i], bookerNames[i], meetingRooms[i], dates[i], times[i]);
@@ -36,17 +36,143 @@ void save_bookings() {
 }
 
 
+// ฟังก์ชันตรวจสอบ BookingID รูปแบบ M001, M002, ...
+int is_valid_booking_id(const char *id) {
+    return id[0] == 'M' &&
+           id[1] >= '0' && id[1] <= '9' &&
+           id[2] >= '0' && id[2] <= '9' &&
+           id[3] >= '0' && id[3] <= '9' &&
+           id[4] == '\0';
+}
+
+// ตรวจสอบ BookerName ต้องไม่ว่างและไม่มีตัวเลข
+int is_valid_booker_name(const char *name) {
+    if (name[0] == '\0') return 0;
+    for (int i = 0; name[i] != '\0'; i++) {
+        if (name[i] >= '0' && name[i] <= '9') return 0;
+    }
+    return 1;
+}
+
+// ตรวจสอบชื่อห้องประชุม ต้องเป็น A, B, C, D, F เท่านั้น
+int is_valid_room(const char *room) {
+    return (strcmp(room, "A") == 0 ||
+            strcmp(room, "B") == 0 ||
+            strcmp(room, "C") == 0 ||
+            strcmp(room, "D") == 0 ||
+            strcmp(room, "F") == 0);
+}
+
+// ตรวจสอบว่ามีการจองห้องเดียวกัน วันเดียวกัน เวลาเดียวกันหรือไม่
+int is_duplicate_booking(const char *room, const char *date, const char *time) {
+    char fullRoom[50];
+    sprintf(fullRoom, "Conference Room %s", room);
+    for (int i = 0; i < count; i++) {
+        if (strcmp(meetingRooms[i], fullRoom) == 0 &&
+            strcmp(dates[i], date) == 0 &&
+            strcmp(times[i], time) == 0) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+// ตรวจสอบรูปแบบวันที่ YYYY-MM-DD
+int is_valid_date(const char *date) {
+    // ตรวจสอบความยาว
+    if (strlen(date) != 10) return 0;
+    // ตรวจสอบตำแหน่ง '-'
+    if (date[4] != '-' || date[7] != '-') return 0;
+    // ตรวจสอบตัวเลข
+    for (int i = 0; i < 10; i++) {
+        if (i == 4 || i == 7) continue;
+        if (date[i] < '0' || date[i] > '9') return 0;
+    }
+    // ตรวจสอบเดือนและวันเบื้องต้น
+    int year = (date[0]-'0')*1000 + (date[1]-'0')*100 + (date[2]-'0')*10 + (date[3]-'0');
+    int month = (date[5]-'0')*10 + (date[6]-'0');
+    int day = (date[8]-'0')*10 + (date[9]-'0');
+    if (month < 1 || month > 12) return 0;
+    if (day < 1 || day > 31) return 0;
+    return 1;
+}
+
+// ตรวจสอบรูปแบบเวลา HH:MM AM/PM
+int is_valid_time(const char *time) {
+    int h, m;
+    char period[3];
+    // ตรวจสอบรูปแบบและอ่านค่า
+    if (sscanf(time, "%d:%d %2s", &h, &m, period) != 3) return 0;
+    // ตรวจสอบชั่วโมงและนาที
+    if (h < 1 || h > 12) return 0;
+    if (m < 0 || m > 59) return 0;
+    // ตรวจสอบ AM หรือ PM (case-insensitive)
+    if (!((period[0] == 'A' || period[0] == 'a' || period[0] == 'P' || period[0] == 'p') &&
+          (period[1] == 'M' || period[1] == 'm') && period[2] == '\0')) return 0;
+    return 1;
+}
+
 // เพิ่มข้อมูลการใช้บริการห้องประชุม
 void add_booking() {
     if (count >= MAX_BOOKINGS) {
         printf("Booking full.\n");
         return;
     }
-    printf("Enter BookingID: "); scanf("%s", bookingIDs[count]);
-    printf("Enter BookerName: "); scanf(" %[^\n]", bookerNames[count]);
-    printf("Enter MeetingRoom: "); scanf("%s", meetingRooms[count]);
-    printf("Enter Date (YYYY-MM-DD): "); scanf("%s", dates[count]);
-    printf("Enter Time (HH:MM): "); scanf("%s", times[count]);
+    char tempID[20];
+    do {
+        printf("Enter BookingID : ");
+        scanf("%s", tempID);
+        if (!is_valid_booking_id(tempID)) {
+            printf("Invalid BookingID format. Try again.\n");
+        }
+    } while (!is_valid_booking_id(tempID));
+    strcpy(bookingIDs[count], tempID);
+
+    char tempName[50];
+    do {
+        printf("Enter BookerName : ");
+        scanf(" %[^\n]", tempName);
+        if (!is_valid_booker_name(tempName)) {
+            printf("Invalid name. Try again.\n");
+        }
+    } while (!is_valid_booker_name(tempName));
+    strcpy(bookerNames[count], tempName);
+
+    char tempRoom[10];
+    do {
+        printf("Enter MeetingRoom (A, B, C, D, F): ");
+        scanf("%s", tempRoom);
+        if (!is_valid_room(tempRoom)) {
+            printf("Invalid room. Please enter A, B, C, D, or F only.\n");
+        }
+    } while (!is_valid_room(tempRoom));
+
+    char tempDate[20], tempTime[15];
+    do {
+        printf("Enter Date (YYYY-MM-DD): ");
+        scanf(" %[^\n]", tempDate);
+        if (!is_valid_date(tempDate)) {
+            printf("Invalid date format. Try again.\n");
+        }
+    } while (!is_valid_date(tempDate));
+
+    do {
+        printf("Enter Time : ");
+        scanf(" %[^\n]", tempTime);
+        if (!is_valid_time(tempTime)) {
+            printf("Invalid time format. Try again.\n");
+        }
+    } while (!is_valid_time(tempTime));
+
+    if (is_duplicate_booking(tempRoom, tempDate, tempTime)) {
+        printf("This room is already booked for the same date and time. Please try again.\n");
+        return;
+    }
+
+    sprintf(meetingRooms[count], "Conference Room %s", tempRoom);
+    strcpy(dates[count], tempDate);
+    strcpy(times[count], tempTime);
+
     count++;
     save_bookings();
     printf("Booking added.\n");
@@ -69,16 +195,58 @@ void search_booking() {
 
 // อัพเดตข้อมูลการใช้บรการ #ยังเขียนไม่เสร็จ
 void update_booking() {
-    printf("Update booking function is not implemented yet.\n");
+    char id[20];
+    printf("Enter BookingID to update: ");
+    scanf("%s", id);
+
+    int found = 0;
+    for (int i = 0; i < count; i++) {
+        if (strcmp(bookingIDs[i], id) == 0) {
+            printf("Current info: %s | %s | %s | %s | %s\n", bookingIDs[i], bookerNames[i], meetingRooms[i], dates[i], times[i]);
+            printf("Enter new Date (YYYY-MM-DD): ");
+            scanf(" %[^\n]", dates[i]);
+            printf("Enter new Time (e.g. 10:00 AM): ");
+            scanf(" %[^\n]", times[i]);
+            save_bookings();
+            printf("Booking updated.\n");
+            found = 1;
+            break;
+        }
+    }
+    if (!found) {
+        printf("BookingID not found.\n");
+    }
 }
 
 
-// ลบข้อมูลการใช้บริการ #ยังเขียนไม่เสร็จ
+// ลบข้อมูลการใช้บริการตาม BookingID
 void delete_booking() {
-    printf("Delete booking function is not implemented yet.\n");
+    char id[20];
+    printf("Enter BookingID to delete: ");
+    scanf("%s", id);
+    int found = 0;
+    for (int i = 0; i < count; i++) {
+        if (strcmp(bookingIDs[i], id) == 0) {
+            // เลื่อนข้อมูลตัวถัดไปขึ้นมาทับ
+            for (int j = i; j < count - 1; j++) {
+                strcpy(bookingIDs[j], bookingIDs[j+1]);
+                strcpy(bookerNames[j], bookerNames[j+1]);
+                strcpy(meetingRooms[j], meetingRooms[j+1]);
+                strcpy(dates[j], dates[j+1]);
+                strcpy(times[j], times[j+1]);
+            }
+            count--;
+            save_bookings();
+            printf("Booking deleted.\n");
+            found = 1;
+            break;
+        }
+    }
+    if (!found) {
+        printf("BookingID not found.\n");
+    }
 }
 
-// เเสดงเมนูให้ผู้ใช้เลือกดำเนินการต่างๆ #ยังไม่เสร็จ
 void display_menu() {
     printf("BookingID | BookerName | MeetingRoom | Date | Time\n");
     for (int i = 0; i < count; i++) {

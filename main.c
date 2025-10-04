@@ -3,6 +3,8 @@
 #include "meet.h"
 
 int main() {
+    load_bookings();
+    
     int num;
     while (1) {
         displayMenu();
