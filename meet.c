@@ -208,7 +208,7 @@ void search_booking() {
 }
 
 
-// อัพเดตข้อมูลการใช้บรการ #ยังเขียนไม่เสร็จ
+// อัพเดตข้อมูลการใช้บริการ
 void update_booking() {
     char id[20];
     printf("Enter BookingID to update: ");
