@@ -77,6 +77,16 @@ int is_duplicate_booking(const char *room, const char *date, const char *time) {
     return 0;
 }
 
+// ตรวจสอบ BookingID ซ้ำ
+int is_duplicate_booking_id(const char *id) {
+    for (int i = 0; i < count; i++) {
+        if (strcmp(bookingIDs[i], id) == 0) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
 // ตรวจสอบรูปแบบวันที่ YYYY-MM-DD
 int is_valid_date(const char *date) {
     // ตรวจสอบความยาว
@@ -124,8 +134,10 @@ void add_booking() {
         scanf("%s", tempID);
         if (!is_valid_booking_id(tempID)) {
             printf("Invalid BookingID format. Try again.\n");
+        } else if (is_duplicate_booking_id(tempID)) {
+            printf("BookingID already exists. Try again.\n");
         }
-    } while (!is_valid_booking_id(tempID));
+    } while (!is_valid_booking_id(tempID) || is_duplicate_booking_id(tempID));
     strcpy(bookingIDs[count], tempID);
 
     char tempName[50];
