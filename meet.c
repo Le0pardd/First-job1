@@ -89,21 +89,24 @@ int is_duplicate_booking_id(const char *id) {
 
 // ตรวจสอบรูปแบบวันที่ YYYY-MM-DD
 int is_valid_date(const char *date) {
-    // ตรวจสอบความยาว
     if (strlen(date) != 10) return 0;
-    // ตรวจสอบตำแหน่ง '-'
     if (date[4] != '-' || date[7] != '-') return 0;
-    // ตรวจสอบตัวเลข
     for (int i = 0; i < 10; i++) {
         if (i == 4 || i == 7) continue;
         if (date[i] < '0' || date[i] > '9') return 0;
     }
-    // ตรวจสอบเดือนและวันเบื้องต้น
     int year = (date[0]-'0')*1000 + (date[1]-'0')*100 + (date[2]-'0')*10 + (date[3]-'0');
     int month = (date[5]-'0')*10 + (date[6]-'0');
     int day = (date[8]-'0')*10 + (date[9]-'0');
     if (month < 1 || month > 12) return 0;
-    if (day < 1 || day > 31) return 0;
+    if (day < 1) return 0;
+    int days_in_month[] = {0,31,28,31,30,31,30,31,31,30,31,30,31};
+    // leap year
+    if (month == 2 && ((year%4==0 && year%100!=0) || (year%400==0))) {
+        if (day > 29) return 0;
+    } else {
+        if (day > days_in_month[month]) return 0;
+    }
     return 1;
 }
 
