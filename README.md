@@ -89,7 +89,7 @@ gcc unittests.c meet.c -o unittests
 
 ```c
 
-./unittests.exe
+.\unittests.exe
 
 ```
 ผลลัพธ์ที่ได้ :
